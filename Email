@@ -1,0 +1,74 @@
+# 1. Import library yang dibutuhkan
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+import pickle
+
+# 2. Membaca dataset dari file CSV
+df = pd.read_csv("C:/Users/asus/spam_or_not_spam.csv")
+
+# 3. Cek kolom yang tersedia
+print("Kolom dataset:", df.columns)
+
+# 4. Menampilkan beberapa sampel data
+print("\nSampel Data:")
+print(df.head())
+
+# 5. Memastikan tidak ada data kosong
+df = df.dropna()
+
+# 6. Memisahkan fitur dan label
+X = df['email']   # Pastikan kolom benar
+Y = df['label']
+
+# 7. Membagi dataset menjadi training dan testing
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+
+# 8. Mengubah teks menjadi vektor menggunakan CountVectorizer
+vectorizer = CountVectorizer()
+X_train_vectorized = vectorizer.fit_transform(X_train)
+X_test_vectorized = vectorizer.transform(X_test)
+
+# 9. Membuat pipeline model Logistic Regression dengan penskalaan
+model = make_pipeline(
+    StandardScaler(with_mean=False),  # with_mean=False karena sparse matrix
+    LogisticRegression(max_iter=1000)
+)
+
+# 10. Melatih model dengan data training
+model.fit(X_train_vectorized, Y_train)
+
+# 11. Prediksi pada data uji
+Y_pred = model.predict(X_test_vectorized)
+
+# 12. Evaluasi model
+accuracy = accuracy_score(Y_test, Y_pred)
+print("\nEvaluasi Model:")
+print(f"Akurasi: {accuracy:.2f}")
+print(classification_report(Y_test, Y_pred, zero_division=1))
+
+# 13. Visualisasi hasil klasifikasi (Tanpa grid)
+results_df = pd.DataFrame({'Actual': Y_test, 'Predicted': Y_pred})
+
+plt.figure(figsize=(10, 5))
+plt.scatter(results_df.index, results_df['Actual'], color='blue', label='Actual', alpha=0.6)
+plt.scatter(results_df.index, results_df['Predicted'], color='red', marker='x', label='Predicted', alpha=0.6)
+plt.xlabel('Index')
+plt.ylabel('Class')
+plt.title('Hasil Klasifikasi Email')
+plt.legend()
+plt.yticks([0, 1], ['Non-Spam', 'Spam'])
+plt.xticks([])
+plt.show()
+
+# 14. Menyimpan model ke dalam file menggunakan pickle
+with open("logistic_model.pkl", "wb") as file:
+    pickle.dump(model, file)
+
+print("\nModel berhasil disimpan sebagai 'logistic_model.pkl'")
